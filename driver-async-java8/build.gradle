@@ -1,0 +1,59 @@
+/*
+ * Copyright (c) 2008-2015 MongoDB, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'osgi'
+apply plugin: 'java'
+
+def configDir = new File(rootDir, 'config')
+archivesBaseName = 'mongodb-driver-async-java8'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+sourceSets {
+    test.java.srcDirs += file('../driver-async/src/test/functional')
+    test.java.srcDirs += file('../driver-async/src/test/unit')
+    test.java.srcDirs += file('../driver-async/src/examples')
+
+    println file('../driver-async/test/functional')
+}
+
+dependencies {
+    compile project(':bson')
+    compile project(':driver-core')
+    compileOnly project(':driver-async')
+
+    testCompile project(':bson').sourceSets.test.output
+    testCompile project(':driver-core').sourceSets.test.output
+}
+
+// Copy original driver-async class file without MongoIterable interface.
+task copyTask(type: Copy) {
+    from fileTree(dir: project(':driver-async').sourceSets.main.output.classesDir)
+        .exclude("**/com/mongodb/async/client/MongoIterable.class")
+    into sourceSets.main.output.classesDir
+}
+
+classes.dependsOn(copyTask)
+copyTask.dependsOn(project(':driver-async').classes)
+
+modifyPom {
+    project {
+        name 'MongoDB Asynchronous Driver for Java8'
+        description 'The MongoDB Asynchronous Driver for Java8'
+        url 'http://www.mongodb.org'
+    }
+}
